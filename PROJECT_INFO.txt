@@ -1,0 +1,10 @@
+App name: BBSS Savings
+Package: com.bhaibrother.bbsssavings
+Version: 2.0.0 (2)
+Minimum Android: 7.0 (API 24)
+Target / Compile SDK: 36
+Android Gradle Plugin: 9.4.0
+Gradle: 9.6.0
+JDK: 17
+Home URL: https://bhai-brother.github.io/bbss-savings/bbss_savings_pro.html
+Repository type: Native Android WebView wrapper for live BBSS website

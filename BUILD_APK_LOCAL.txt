@@ -1,0 +1,16 @@
+BBSS Savings v2 - Local build
+
+Requirements:
+- Android Studio / Android SDK Platform 36
+- Android SDK Build Tools 36.0.0
+- JDK 17
+- Gradle 9.6.0
+
+Command:
+  gradle --no-daemon :app:assembleDebug
+
+APK output:
+  app/build/outputs/apk/debug/app-debug.apk
+
+Project validation (before Android build):
+  ./scripts/check-project.sh
