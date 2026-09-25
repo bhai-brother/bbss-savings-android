@@ -40,6 +40,7 @@ import org.json.JSONObject;
 
 import java.io.OutputStream;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
@@ -95,9 +96,8 @@ public class MainActivity extends Activity {
         configureBackNavigation();
         registerNetworkMonitor();
 
-        if (savedInstanceState != null && webView.restoreState(savedInstanceState) != null) {
-            return;
-        }
+        // Always load the live site on app start. Restoring an old WebView snapshot can
+        // keep stale HTML/CSS after the GitHub Pages site has been updated.
         loadHome();
     }
 
@@ -147,7 +147,7 @@ public class MainActivity extends Activity {
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
         settings.setTextZoom(100);
-        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
         settings.setGeolocationEnabled(false);
         settings.setUserAgentString(settings.getUserAgentString() + USER_AGENT_SUFFIX);
 
@@ -274,8 +274,18 @@ public class MainActivity extends Activity {
 
     private void injectAndroidEnhancements() {
         String script = "(function(){"
-                + "if(!window.BBSSNative||window.__bbssAndroidV2)return;"
-                + "window.__bbssAndroidV2=true;"
+                + "if(!window.BBSSNative)return;"
+                + "var st=document.getElementById('bbss-android-member-tabs-v3');"
+                + "if(!st){st=document.createElement('style');st.id='bbss-android-member-tabs-v3';"
+                + "st.textContent='@media(max-width:600px){body.member-mode .tabs{display:flex!important;overflow-x:auto!important;overflow-y:hidden!important;gap:7px!important;padding:8px 10px 10px!important;position:sticky!important;top:0!important;z-index:60!important;background:rgba(10,17,14,.96)!important;-webkit-overflow-scrolling:touch!important;scrollbar-width:thin!important}body.member-mode .tabs .tab{display:inline-flex;flex:0 0 auto!important;white-space:nowrap!important;min-height:42px!important}body.member-mode .member-bottom-nav{display:none!important}body.member-mode{padding-bottom:0!important}}';"
+                + "document.head.appendChild(st);}"
+                + "try{"
+                + "if(typeof findAccountById!=='function'&&typeof state!=='undefined'){window.findAccountById=function(id){return (state.auth&&state.auth.members||[]).find(function(a){return String(a.memberId||'').trim().toLowerCase()===String(id||'').trim().toLowerCase();})||null;};}"
+                + "if(typeof rowsForAccount!=='function'&&typeof state!=='undefined'){window.rowsForAccount=function(account){if(!account)return [];var names=[account.name].concat(account.aliases||[]).map(function(v){return String(v||'').trim().toLowerCase();});var out=[];Object.keys(state.deposits||{}).sort(function(a,b){return Number(a)-Number(b);}).forEach(function(y){(state.deposits[y]||[]).forEach(function(r){if(names.indexOf(String(r.name||'').trim().toLowerCase())>=0)out.push({year:y,row:r});});});return out;};}"
+                + "if(typeof totalForAccount!=='function'){window.totalForAccount=function(account){return rowsForAccount(account).reduce(function(sum,x){return sum+(x.row&&x.row.months||[]).reduce(function(a,b){return a+(Number(b)||0);},0);},0);};}"
+                + "if(typeof initials!=='function'){window.initials=function(name){var a=String(name||'BB').trim().split(/\\s+/).filter(Boolean).slice(0,2);return a.map(function(x){return x.charAt(0);}).join('').toUpperCase()||'BB';};}"
+                + "}catch(e){console.error('BBSS helper fallback failed',e);}"
+                + "if(window.__bbssAndroidV3)return;window.__bbssAndroidV3=true;"
                 + "function b64Utf8(text){"
                 + "var bytes=new TextEncoder().encode(String(text));"
                 + "var binary='';var step=32768;"
@@ -288,7 +298,7 @@ public class MainActivity extends Activity {
                 + "};"
                 + "window.print=function(){try{BBSSNative.printPage(document.title||'BBSS Savings');}catch(e){console.error(e);}};"
                 + "document.addEventListener('click',function(e){"
-                + "var a=e.target&&e.target.closest?e.target.closest('a[target=\\\"_blank\\\"]'):null;"
+                + "var a=e.target&&e.target.closest?e.target.closest('a[target=\"_blank\"]'):null;"
                 + "if(a&&a.href){e.preventDefault();window.location.href=a.href;}"
                 + "},true);"
                 + "})();";
@@ -375,7 +385,16 @@ public class MainActivity extends Activity {
 
     private void loadHome() {
         showingOfflinePage = false;
-        webView.loadUrl(HOME_URL);
+
+        // Force the latest GitHub Pages HTML/CSS/JS. This does not clear cookies,
+        // localStorage or login data; it only bypasses the WebView HTTP cache.
+        webView.clearCache(true);
+        String separator = HOME_URL.contains("?") ? "&" : "?";
+        String freshUrl = HOME_URL + separator + "bbss_app_refresh=" + System.currentTimeMillis();
+        HashMap<String, String> headers = new HashMap<>();
+        headers.put("Cache-Control", "no-cache, no-store, max-age=0");
+        headers.put("Pragma", "no-cache");
+        webView.loadUrl(freshUrl, headers);
     }
 
     private void showOfflinePage() {

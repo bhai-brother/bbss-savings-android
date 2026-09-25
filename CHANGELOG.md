@@ -17,3 +17,9 @@
 - User-provided BBSS blue Bengali logo is now the Android launcher icon.
 - Regenerated mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi launcher assets.
 - Added `artwork/bbss_app_icon_source.png` and `artwork/play-store-icon-512.png` for future releases.
+
+## 2.0.1
+- Force fresh GitHub Pages load in Android WebView (no stale page restore/cache).
+- Force Member top navigation visible on mobile inside the Android app.
+- Add Android-side fallback member helper functions to avoid stale-page `findAccountById` errors.
+- Update GitHub Actions Android setup to `setup-android@v4` and remove blocking lint step from debug build.
